@@ -95,4 +95,4 @@ jobs:
         run: |
           mv dist/release-body.md body.md
           gh release create "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" --verify-tag --latest \
-            --title "Tilepad ${GITHUB_REF_NAME#v}" --notes-file body.md dist/*
+            --title "Tilepad Simple ${GITHUB_REF_NAME#v}" --notes-file body.md dist/*
