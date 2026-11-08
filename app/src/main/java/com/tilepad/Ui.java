@@ -14,23 +14,53 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-/** Dark theme tokens and small view factories. Every view is built in code. */
+/**
+ * Day and night color tokens (the Preconditioning app's palette) and small view factories.
+ * Every view is built in code; {@link #apply} picks the palette before any view is built.
+ */
 final class Ui {
-    static final int BG = 0xff0b0d12;
-    static final int TILE = 0xff181c24;
-    static final int TILE_PRESSED = 0xff252b36;
-    static final int SURFACE = 0xff232833;
-    static final int SURFACE_PRESSED = 0xff313848;
-    static final int LINE = 0xff2c3340;
-    static final int TEXT = 0xfff2f4f7;
-    static final int MUTED = 0xff8e97a8;
-    static final int FAINT = 0xff5a6273;
-    static final int ACCENT = 0xff4c8dff;
-    static final int GREEN = 0xff34d27b;
-    static final int AMBER = 0xffffb340;
-    static final int RED = 0xffff5a4f;
-    static final int PURPLE = 0xff8b6cff;
-    static final int SCRIM = 0xcc05070a;
+    static boolean NIGHT = true;
+    /** Window, tiles, raised surfaces inside popups, and hairlines. */
+    static int BG, TILE, TILE_PRESSED, SURFACE, SURFACE_PRESSED, LINE;
+    /** Primary, secondary and faint text. */
+    static int TEXT, SECONDARY, MUTED, FAINT;
+    /** Accent fill, its pressed shade, accent-colored text, and the soft accent tint. */
+    static int ACCENT, ACCENT_PRESSED, LINK, TINT;
+    static int GREEN, AMBER, RED, RED_PRESSED, RED_TINT, PURPLE, SCRIM;
+    /** Text and glyphs on an accent or red fill. */
+    static final int ON_ACCENT = 0xffffffff;
+
+    static { apply(true); }
+
+    static void apply(boolean night) {
+        NIGHT = night;
+        if (night) {
+            BG = 0xff0b0f17; TILE = 0xff161c27; TILE_PRESSED = 0xff1f2733;
+            SURFACE = 0xff1f2733; SURFACE_PRESSED = 0xff2a3242; LINE = 0xff2a3242;
+            TEXT = 0xffe8ecf3; SECONDARY = 0xffc3cad6; MUTED = 0xff97a1b3; FAINT = 0xff5d6778;
+            ACCENT = 0xff2678eb; ACCENT_PRESSED = 0xff1f63c4; LINK = 0xff6aaeff; TINT = 0xff1d3150;
+            GREEN = 0xff2fbf6b; AMBER = 0xfff59e0b; RED = 0xffe5484d; RED_PRESSED = 0xffc23a3f;
+            RED_TINT = 0xff3a1c1f; PURPLE = 0xff8b6cff; SCRIM = 0xb305080e;
+        } else {
+            BG = 0xffffffff; TILE = 0xfff0f2f6; TILE_PRESSED = 0xffe2e6ed;
+            SURFACE = 0xffeaedf2; SURFACE_PRESSED = 0xffdce1e9; LINE = 0xffdfe3ea;
+            TEXT = 0xff101522; SECONDARY = 0xff45536a; MUTED = 0xff677388; FAINT = 0xffa3acbb;
+            ACCENT = 0xff007aff; ACCENT_PRESSED = 0xff0062cc; LINK = 0xff007aff; TINT = 0xffe7f0ff;
+            GREEN = 0xff1aa251; AMBER = 0xffd98a00; RED = 0xffe5484d; RED_PRESSED = 0xffc23a3f;
+            RED_TINT = 0xfffde8e8; PURPLE = 0xff6c4cf0; SCRIM = 0x66101522;
+        }
+    }
+
+    /** Label color for a button with this fill: white on accent or red, otherwise secondary text. */
+    static int onFill(int fill) { return fill == ACCENT || fill == RED || fill == GREEN ? ON_ACCENT : SECONDARY; }
+
+    /** Pressed shade for a button fill. */
+    static int pressedFor(int fill) {
+        if (fill == ACCENT) return ACCENT_PRESSED;
+        if (fill == RED) return RED_PRESSED;
+        if (fill == TILE) return TILE_PRESSED;
+        return SURFACE_PRESSED;
+    }
 
     final Context context;
     private final float density;
@@ -82,6 +112,11 @@ final class Ui {
         return v;
     }
 
+    /** Small all-caps section label, like the Preconditioning app's card captions. */
+    TextView caption(String value) {
+        return line(value.toUpperCase(java.util.Locale.US), 12, MUTED, true);
+    }
+
     LinearLayout column() { LinearLayout v = new LinearLayout(context); v.setOrientation(LinearLayout.VERTICAL); return v; }
     LinearLayout row() { LinearLayout v = new LinearLayout(context); v.setOrientation(LinearLayout.HORIZONTAL); return v; }
 
@@ -95,6 +130,12 @@ final class Ui {
     GradientDrawable outlined(int fill, float radiusDp, float strokeDp, int stroke) {
         GradientDrawable shape = rounded(fill, radiusDp);
         shape.setStroke(dp(strokeDp), stroke);
+        return shape;
+    }
+
+    GradientDrawable dashed(float radiusDp, int stroke) {
+        GradientDrawable shape = rounded(Color.TRANSPARENT, radiusDp);
+        shape.setStroke(dp(2), stroke, dp(9), dp(7));
         return shape;
     }
 
@@ -116,9 +157,10 @@ final class Ui {
 
     Drawable pressableOutline(float radiusDp) {
         StateListDrawable states = new StateListDrawable();
-        states.addState(new int[]{android.R.attr.state_pressed}, outlined(TILE_PRESSED, radiusDp, 2, LINE));
+        GradientDrawable down = dashed(radiusDp, LINE); down.setColor(TILE);
+        states.addState(new int[]{android.R.attr.state_pressed}, down);
         states.addState(new int[]{android.R.attr.state_activated}, outlined(Color.TRANSPARENT, radiusDp, 3, ACCENT));
-        states.addState(new int[]{}, outlined(Color.TRANSPARENT, radiusDp, 2, LINE));
+        states.addState(new int[]{}, dashed(radiusDp, LINE));
         return states;
     }
 
@@ -129,9 +171,9 @@ final class Ui {
     LinearLayout button(String title, Glyph.Kind glyph, int fill, int pressed, int textColor) {
         LinearLayout v = row();
         v.setGravity(Gravity.CENTER);
-        v.setPadding(dp(26), 0, dp(26), 0);
+        v.setPadding(dp(28), 0, dp(28), 0);
         v.setMinimumWidth(dp(150));
-        background(v, pressable(fill, pressed, 28));
+        background(v, pressable(fill, pressed, 30));
         if (glyph != null) {
             LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(dp(24), dp(24));
             p.rightMargin = dp(10);

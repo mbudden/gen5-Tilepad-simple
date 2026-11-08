@@ -132,9 +132,7 @@ final class TileGrid extends ViewGroup {
 
     @Override protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        // The divider belongs to page one, beside the fixed block.
-        if (math != null && math.grouped && order.size() > fixedCount)
-            canvas.drawLine(math.dividerX(), gap / 2f, math.dividerX(), math.contentHeight() - gap / 2f, separator);
+        // Page one's fixed block is set apart by the wider gap alone; no divider line.
     }
 
     @Override protected int getChildDrawingOrder(int count, int i) {

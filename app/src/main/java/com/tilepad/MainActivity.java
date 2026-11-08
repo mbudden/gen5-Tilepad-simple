@@ -138,6 +138,8 @@ public final class MainActivity extends Activity implements TileGrid.Listener, T
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
+        // Day or night palette, from the head unit's display mode, before any view is built.
+        Ui.apply(DisplaySignals.night(this, getResources().getConfiguration()));
         ui = new Ui(this);
         preview = PreviewData.enabled(getIntent());
         support = preview ? TileSupport.all() : TileSupport.of(systemFeatures(), VehicleClientFactory.simulated());
@@ -153,7 +155,7 @@ public final class MainActivity extends Activity implements TileGrid.Listener, T
         scroll.setClipToPadding(false);
         root.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
 
-        done = ui.button("Done", Glyph.Kind.CHECK, Ui.ACCENT, 0xff3a74d9, Ui.TEXT);
+        done = ui.button("Done", Glyph.Kind.CHECK, Ui.ACCENT, Ui.ACCENT_PRESSED, Ui.ON_ACCENT);
         done.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { grid.setEditing(false); }
         });
@@ -174,6 +176,12 @@ public final class MainActivity extends Activity implements TileGrid.Listener, T
                 main.post(new Runnable() { @Override public void run() { onCatalog(catalog); } });
             }
         }, "tilepad-catalog").start();
+    }
+
+    /** uiMode is handled here (see the manifest): rebuild only when day/night actually flips. */
+    @Override public void onConfigurationChanged(android.content.res.Configuration config) {
+        super.onConfigurationChanged(config);
+        if (DisplaySignals.night(this, config) != Ui.NIGHT) recreate();
     }
 
     @Override protected void onStart() {
@@ -281,18 +289,18 @@ public final class MainActivity extends Activity implements TileGrid.Listener, T
                 tweaksTile.bind(tweaks);
                 break;
             case NEMESIS:
-                tile = TileView.simple(ui, spec, this, TileView.chip(ui, Glyph.Kind.TERMINAL, Ui.PURPLE), 80, "Nemesis Manager");
+                tile = TileView.simple(ui, spec, this, TileView.chip(ui, Glyph.Kind.TERMINAL, Ui.TINT, Ui.LINK), 70, "Nemesis");
                 break;
             case REBOOT:
-                tile = TileView.simple(ui, spec, this, TileView.chip(ui, Glyph.Kind.REBOOT, Ui.RED), 80, "Reboot Head Unit");
+                tile = TileView.simple(ui, spec, this, TileView.chip(ui, Glyph.Kind.REBOOT, Ui.RED_TINT, Ui.RED), 70, "Reboot");
                 break;
             case ADD: {
-                tile = TileView.simple(ui, spec, this, ui.glyph(Glyph.Kind.PLUS, Ui.MUTED, 56), 56, "Add shortcut");
+                tile = TileView.simple(ui, spec, this, TileView.chip(ui, Glyph.Kind.PLUS, 0x00000000, Ui.MUTED), 70, "Add");
                 ((TextView) tile.findViewWithTag("label")).setTextColor(Ui.MUTED);
                 break;
             }
             default:
-                tile = TileView.simple(ui, spec, this, TileView.appIcon(ui, shortcutIcon(spec)), 80, shortcutLabel(spec));
+                tile = TileView.simple(ui, spec, this, TileView.appIcon(ui, shortcutIcon(spec)), 70, shortcutLabel(spec));
         }
         tile.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { if (!grid.isEditing()) onTileTap(tile); }
@@ -500,8 +508,8 @@ public final class MainActivity extends Activity implements TileGrid.Listener, T
         left.addView(hint, hp);
         left.addView(new View(this), new LinearLayout.LayoutParams(-1, 0, 1f));
         LinearLayout buttons = ui.row();
-        final View cancel = ui.button("Cancel", null, Ui.SURFACE, Ui.SURFACE_PRESSED, Ui.TEXT);
-        final View save = ui.button("Save", null, Ui.ACCENT, 0xff3a74d9, Ui.TEXT);
+        final View cancel = ui.button("Cancel", null, Ui.SURFACE, Ui.SURFACE_PRESSED, Ui.SECONDARY);
+        final View save = ui.button("Save", null, Ui.ACCENT, Ui.ACCENT_PRESSED, Ui.ON_ACCENT);
         buttons.addView(cancel, new LinearLayout.LayoutParams(-2, ui.dp(58)));
         LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-2, ui.dp(58));
         sp.leftMargin = ui.dp(14);
@@ -721,8 +729,9 @@ public final class MainActivity extends Activity implements TileGrid.Listener, T
                 buttons = card.setActions(close);
                 break;
             case WAITING:
-                card.set(Glyph.Kind.BATTERY_HEAT, Ui.AMBER, true, "Waiting for BMS",
-                    PreconPresenter.withoutPrefix(s.detail, "Waiting for BMS — "), elapsed);
+                // Short, like the rest of the screen. The timeout varies by profile, so no number here.
+                card.set(Glyph.Kind.BATTERY_HEAT, Ui.AMBER, true, "Waiting for car",
+                    "Usually 1–2 minutes.", elapsed);
                 buttons = card.setActions(close, cancel);
                 break;
             case ACTIVE:

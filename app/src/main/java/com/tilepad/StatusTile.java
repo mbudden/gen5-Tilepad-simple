@@ -3,67 +3,69 @@ package com.tilepad;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 /**
- * Information-dense core tiles (Wi-Fi, preconditioning, ADB), all one layout: a glyph and status
- * pill on top, then four text rows anchored to the bottom -- caption (what the tile is), headline
- * (the state: On / Off / network name), detail (IP, port, elapsed time) and meta (a small extra or
- * a "Tap to…" hint). Every row keeps its height when empty, so the rows line up across tiles.
+ * Information tiles (Wi-Fi, ADB, Tweaks, Battery), all one layout, in the Preconditioning app's
+ * card style: a status dot and all-caps caption with a small glyph in the corner, one big state
+ * word (headline), a detail line under it, and at the bottom either a muted hint (meta) or an
+ * action pill such as Start.
  */
 abstract class StatusTile extends TileView {
     final Glyph glyph;
     final SpinnerView spinner;
-    final TextView pill, caption, headline, detail, meta;
-    private final View pillDot;
-    private final LinearLayout pillBox;
+    final TextView caption, headline, detail, meta, action;
+    private final View dot;
 
     StatusTile(Ui ui, TileSpec spec, EditListener edits, Glyph.Kind kind, String captionText) {
         super(ui, spec, edits);
-        FrameLayout content = new FrameLayout(ui.context);
-        int pad = ui.dp(18);
-        content.setPadding(pad, pad, pad, ui.dp(16));
+        LinearLayout content = ui.column();
+        content.setPadding(ui.dp(16), ui.dp(15), ui.dp(14), ui.dp(15));
+
+        FrameLayout header = new FrameLayout(ui.context);
+        LinearLayout label = ui.row();
+        label.setGravity(Gravity.CENTER_VERTICAL);
+        dot = new View(ui.context);
+        LinearLayout.LayoutParams dp = new LinearLayout.LayoutParams(ui.dp(7), ui.dp(7));
+        dp.rightMargin = ui.dp(6);
+        label.addView(dot, dp);
+        caption = ui.caption(captionText);
+        label.addView(caption);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(-2, ui.dp(26), Gravity.LEFT | Gravity.TOP);
+        lp.rightMargin = ui.dp(34);
+        header.addView(label, lp);
 
         FrameLayout icon = new FrameLayout(ui.context);
-        spinner = new SpinnerView(ui.context, ui.dp(3));
+        spinner = new SpinnerView(ui.context, ui.dp(2));
         icon.addView(spinner, new FrameLayout.LayoutParams(-1, -1));
-        glyph = new Glyph(kind, Ui.MUTED, ui.dp(44));
-        android.widget.ImageView image = new android.widget.ImageView(ui.context);
+        glyph = new Glyph(kind, Ui.MUTED, ui.dp(26));
+        ImageView image = new ImageView(ui.context);
         image.setImageDrawable(glyph);
         image.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
-        icon.addView(image, new FrameLayout.LayoutParams(ui.dp(44), ui.dp(44), Gravity.CENTER));
-        // The glyph sits centred in its 64 dp spinner ring; shift the ring so the glyph itself
-        // starts at the same left edge as the caption text below it.
-        FrameLayout.LayoutParams iconParams = new FrameLayout.LayoutParams(ui.dp(64), ui.dp(64), Gravity.TOP | Gravity.LEFT);
-        iconParams.leftMargin = -ui.dp(10);
-        // Up a little, so the glyph doesn't crowd the caption below it.
-        iconParams.topMargin = -ui.dp(6);
-        content.addView(icon, iconParams);
+        icon.addView(image, new FrameLayout.LayoutParams(ui.dp(26), ui.dp(26), Gravity.CENTER));
+        FrameLayout.LayoutParams ip = new FrameLayout.LayoutParams(ui.dp(38), ui.dp(38), Gravity.RIGHT | Gravity.TOP);
+        ip.topMargin = -ui.dp(6);
+        ip.rightMargin = -ui.dp(4);
+        header.addView(icon, ip);
+        content.addView(header, new LinearLayout.LayoutParams(-1, ui.dp(26)));
 
-        pillBox = ui.row();
-        pillBox.setGravity(Gravity.CENTER_VERTICAL);
-        pillBox.setPadding(ui.dp(10), 0, ui.dp(12), 0);
-        pillDot = new View(ui.context);
-        LinearLayout.LayoutParams dot = new LinearLayout.LayoutParams(ui.dp(8), ui.dp(8));
-        dot.rightMargin = ui.dp(7);
-        pillBox.addView(pillDot, dot);
-        pill = ui.line("", 13, Ui.MUTED, true);
-        pillBox.addView(pill);
-        FrameLayout.LayoutParams pillParams = new FrameLayout.LayoutParams(-2, ui.dp(28), Gravity.TOP | Gravity.RIGHT);
-        pillParams.topMargin = ui.dp(8);
-        content.addView(pillBox, pillParams);
+        headline = ui.line("", 26, Ui.TEXT, true);
+        addLine(content, headline, 10);
+        detail = ui.line("", 15, Ui.SECONDARY, false);
+        addLine(content, detail, 6);
+        content.addView(new View(ui.context), new LinearLayout.LayoutParams(-1, 0, 1f));
 
-        LinearLayout text = ui.column();
-        caption = ui.line(captionText, 14, Ui.MUTED, false);
-        headline = ui.line("", 24, Ui.TEXT, true);
-        detail = ui.line("", 17, Ui.TEXT, false);
-        meta = ui.line("", 14, Ui.MUTED, false);
-        addLine(text, caption, 0);
-        addLine(text, headline, 6);
-        addLine(text, detail, 6);
-        addLine(text, meta, 6);
-        content.addView(text, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
+        FrameLayout bottom = new FrameLayout(ui.context);
+        meta = ui.line("", 13, Ui.MUTED, false);
+        bottom.addView(meta, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM | Gravity.LEFT));
+        action = ui.line("", 15, Ui.ON_ACCENT, true);
+        action.setGravity(Gravity.CENTER);
+        action.setPadding(ui.dp(20), 0, ui.dp(20), 0);
+        action.setVisibility(GONE);
+        bottom.addView(action, new FrameLayout.LayoutParams(-2, ui.dp(36), Gravity.BOTTOM | Gravity.LEFT));
+        content.addView(bottom, new LinearLayout.LayoutParams(-1, ui.dp(36)));
         setContent(content);
     }
 
@@ -73,16 +75,33 @@ abstract class StatusTile extends TileView {
         parent.addView(view, p);
     }
 
-    void setPill(String text, int color) {
-        if (text == null) { pillBox.setVisibility(INVISIBLE); return; }
-        pillBox.setVisibility(VISIBLE);
-        pill.setText(text);
-        pill.setTextColor(color);
-        Ui.background(pillDot, ui.circle(color));
-        Ui.background(pillBox, ui.rounded(Ui.alpha(color, 0.14f), 14));
+    /** The caption's status dot; 0 hides it (the caption keeps its place). */
+    void setDot(int color) {
+        dot.setVisibility(color == 0 ? INVISIBLE : VISIBLE);
+        if (color != 0) Ui.background(dot, ui.circle(color));
     }
 
-    /** Empty text hides the row but keeps its slot (see the class comment). */
+    /** Glyph and spinner color, and whether the spinner turns. */
+    void setIcon(int color, boolean spinning) {
+        glyph.setColor(color);
+        spinner.setColor(color);
+        spinner.setSpinning(spinning);
+    }
+
+    /**
+     * The bottom action pill in place of the hint: primary is a solid accent pill (Start),
+     * otherwise a soft tinted one (elapsed time, Turn off). Null shows the hint instead.
+     */
+    void setAction(String label, boolean primary) {
+        if (label == null) { action.setVisibility(GONE); meta.setVisibility(VISIBLE); return; }
+        action.setText(label);
+        action.setTextColor(primary ? Ui.ON_ACCENT : Ui.LINK);
+        Ui.background(action, ui.rounded(primary ? Ui.ACCENT : Ui.TINT, 18));
+        action.setVisibility(VISIBLE);
+        meta.setVisibility(INVISIBLE);
+    }
+
+    /** Empty text hides the row but keeps its slot, so rows line up across tiles. */
     static void show(TextView view, String text) {
         view.setText(text == null ? "" : text);
         view.setVisibility(text == null || text.isEmpty() ? INVISIBLE : VISIBLE);

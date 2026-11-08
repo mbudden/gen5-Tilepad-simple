@@ -114,9 +114,9 @@ final class KeyPad extends LinearLayout {
     }
 
     private TextView textKey(String label, int fill, float sp, final Runnable action) {
-        TextView key = ui.text(label, sp, Ui.TEXT, fill == Ui.ACCENT);
+        TextView key = ui.text(label, sp, fill == Ui.ACCENT ? Ui.ON_ACCENT : Ui.TEXT, fill == Ui.ACCENT);
         key.setGravity(Gravity.CENTER);
-        Ui.background(key, ui.pressable(fill, fill == Ui.ACCENT ? 0xff3a74d9 : Ui.SURFACE_PRESSED, 10));
+        Ui.background(key, ui.pressable(fill, fill == Ui.ACCENT ? Ui.ACCENT_PRESSED : Ui.SURFACE_PRESSED, 10));
         click(key, action);
         return key;
     }
@@ -124,7 +124,7 @@ final class KeyPad extends LinearLayout {
     private View glyphKey(Glyph.Kind kind, int fill, Runnable action, String description) {
         FrameLayout key = new FrameLayout(getContext());
         Ui.background(key, ui.pressable(fill, Ui.SURFACE_PRESSED, 10));
-        key.addView(ui.glyph(kind, Ui.TEXT, 26), new FrameLayout.LayoutParams(ui.dp(26), ui.dp(26), Gravity.CENTER));
+        key.addView(ui.glyph(kind, fill == Ui.ACCENT ? Ui.ON_ACCENT : Ui.TEXT, 26), new FrameLayout.LayoutParams(ui.dp(26), ui.dp(26), Gravity.CENTER));
         key.setContentDescription(description);
         click(key, action);
         return key;

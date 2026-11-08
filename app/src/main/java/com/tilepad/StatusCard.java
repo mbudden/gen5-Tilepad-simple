@@ -45,7 +45,7 @@ final class StatusCard extends LinearLayout {
 
         LinearLayout text = ui.column();
         title = ui.text("", 26, Ui.TEXT, true);
-        body = ui.text("", 18, Ui.MUTED, false);
+        body = ui.text("", 17, Ui.SECONDARY, false);
         body.setMaxLines(4);
         body.setLineSpacing(0, 1.15f);
         meta = ui.text("", 16, Ui.MUTED, false);
@@ -94,8 +94,9 @@ final class StatusCard extends LinearLayout {
             buttonKey = key.toString();
             buttons.removeAllViews();
             for (final Action a : actions) {
-                int pressed = a.fill == Ui.SURFACE ? Ui.SURFACE_PRESSED : Ui.alpha(a.fill, 0.75f);
-                LinearLayout b = ui.button(a.label, null, a.fill, pressed, Ui.TEXT);
+                // Secondary buttons sit on the card as a soft raised pill.
+                int fill = a.fill;
+                LinearLayout b = ui.button(a.label, null, fill, Ui.pressedFor(fill), Ui.onFill(fill));
                 b.setTag(a);
                 LayoutParams p = new LayoutParams(-2, -1);
                 p.leftMargin = ui.dp(14);

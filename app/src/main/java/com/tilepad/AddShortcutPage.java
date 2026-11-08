@@ -149,7 +149,7 @@ final class AddShortcutPage extends LinearLayout {
         for (TextView tab : new TextView[]{appsTab, allTab}) {
             boolean selected = (tab == appsTab) == apps;
             Ui.background(tab, ui.pressable(selected ? Ui.ACCENT : Ui.TILE, selected ? Ui.ACCENT : Ui.TILE_PRESSED, 24));
-            tab.setTextColor(selected ? Ui.TEXT : Ui.MUTED);
+            tab.setTextColor(selected ? Ui.ON_ACCENT : Ui.MUTED);
         }
         refresh();
     }
@@ -240,8 +240,12 @@ final class AddShortcutPage extends LinearLayout {
         }
     }
 
+    /** Icon backings by catalog key, so scrolling doesn't re-measure icons. */
+    private final java.util.Map<String, IconBacking.Kind> backings = new java.util.HashMap<>();
+
     private final class Row extends LinearLayout {
         final ImageView icon;
+        final android.widget.FrameLayout plate;
         final TextView label, component;
         final ImageView state;
 
@@ -255,7 +259,9 @@ final class AddShortcutPage extends LinearLayout {
             Ui.background(this, ui.pressable(Ui.TILE, Ui.TILE_PRESSED, 18));
             icon = new ImageView(ui.context);
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            addView(icon, new LayoutParams(ui.dp(48), ui.dp(48)));
+            plate = new android.widget.FrameLayout(ui.context);
+            plate.addView(icon, new android.widget.FrameLayout.LayoutParams(-1, -1));
+            addView(plate, new LayoutParams(ui.dp(48), ui.dp(48)));
             LinearLayout text = ui.column();
             label = ui.line("", 18, Ui.TEXT, true);
             component = ui.line("", 13, Ui.MUTED, false);
@@ -274,6 +280,10 @@ final class AddShortcutPage extends LinearLayout {
         void bind(AppCatalog.Entry e, boolean knob) {
             boolean added = listener.isAdded(e.key);
             icon.setImageDrawable(e.icon);
+            // Same backing as the grid tiles, so a white icon doesn't vanish on a light row.
+            IconBacking.Kind kind = backings.get(e.key);
+            if (kind == null) { kind = TileView.backing(e.icon); backings.put(e.key, kind); }
+            TileView.back(ui, plate, icon, kind, 48);
             label.setText(e.label);
             component.setText(e.launchable ? e.key : "Protected · can't be opened");
             state.setImageDrawable(new Glyph(added ? Glyph.Kind.CHECK : Glyph.Kind.PLUS,
