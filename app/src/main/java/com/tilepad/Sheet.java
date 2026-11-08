@@ -45,7 +45,7 @@ final class Sheet {
             @Override public void onClick(View v) { dismiss(); }
         });
         card.setClickable(true); // swallow taps so only the scrim dismisses
-        Ui.background(card, ui.outlined(0xff161a21, 28, 1, Ui.LINE));
+        Ui.background(card, ui.rounded(Ui.NIGHT ? Ui.TILE : 0xffffffff, 30));
         FrameLayout.LayoutParams p = new FrameLayout.LayoutParams(
             widthDp > 0 ? ui.dp(widthDp) : -1, -2, Gravity.CENTER);
         if (widthDp <= 0) p.leftMargin = p.rightMargin = ui.dp(24);

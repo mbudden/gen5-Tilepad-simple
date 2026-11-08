@@ -6,74 +6,44 @@ package com.tilepad;
  */
 final class AdbTile extends StatusTile {
     AdbTile(Ui ui, TileSpec spec, EditListener edits) {
-        super(ui, spec, edits, Glyph.Kind.BUG, "ADB over TCP");
+        super(ui, spec, edits, Glyph.Kind.BUG, "ADB");
         bind(AdbSnapshot.checking());
     }
 
     void bind(AdbSnapshot s) {
+        setAction(null, false);
         switch (s.state) {
-            case ON: {
-                glyph.setColor(Ui.ACCENT);
-                spinner.setColor(Ui.ACCENT);
-                spinner.setSpinning(false);
-                setPill("On", Ui.GREEN);
-                show(headline, "Port " + s.port);
-                headline.setTextColor(Ui.ACCENT);
-                show(detail, "Open to network");
-                show(meta, "Tap to turn off");
+            case ON:
+                state(Ui.LINK, false, Ui.GREEN, "On", "Port " + s.port, "Tap to turn off");
                 setContentDescription("ADB on, any computer on the network can connect on port " + s.port);
                 break;
-            }
             case STARTING:
-                busy("Starting", "Opening port", Ui.AMBER);
+                state(Ui.AMBER, true, Ui.AMBER, "Starting", "Opening port", "");
+                setContentDescription("ADB starting");
                 break;
             case STOPPING:
-                busy("Stopping", "Closing port", Ui.MUTED);
+                state(Ui.MUTED, true, Ui.FAINT, "Stopping", "Closing port", "");
+                setContentDescription("ADB stopping");
                 break;
             case ERROR:
-                glyph.setColor(Ui.RED);
-                spinner.setColor(Ui.RED);
-                spinner.setSpinning(false);
-                setPill("Error", Ui.RED);
-                show(headline, "Didn't switch");
-                headline.setTextColor(Ui.TEXT);
-                show(detail, "");
-                show(meta, "Tap for details");
+                state(Ui.RED, false, Ui.RED, "Error", "Didn't switch", "Tap for details");
                 setContentDescription("ADB error. " + s.detail);
                 break;
             case CHECKING:
-                glyph.setColor(Ui.MUTED);
-                spinner.setColor(Ui.MUTED);
-                spinner.setSpinning(true);
-                setPill(null, Ui.MUTED);
-                show(headline, "Checking…");
-                headline.setTextColor(Ui.TEXT);
-                show(detail, "");
-                show(meta, "");
+                state(Ui.MUTED, true, 0, "Checking…", "", "");
                 setContentDescription("ADB, checking");
                 break;
             default: // OFF
-                glyph.setColor(Ui.MUTED);
-                spinner.setColor(Ui.MUTED);
-                spinner.setSpinning(false);
-                setPill("Off", Ui.MUTED);
-                show(headline, "Port closed");
-                headline.setTextColor(Ui.TEXT);
-                show(detail, "");
-                show(meta, "Tap to turn on");
+                state(Ui.MUTED, false, Ui.FAINT, "Off", "Port closed", "Tap to turn on");
                 setContentDescription("ADB off");
         }
     }
 
-    private void busy(String pill, String headlineText, int color) {
-        glyph.setColor(color);
-        spinner.setColor(color);
-        spinner.setSpinning(true);
-        setPill(pill, color);
-        show(headline, headlineText);
-        headline.setTextColor(Ui.TEXT);
-        show(detail, "");
-        show(meta, "");
-        setContentDescription("ADB " + headlineText);
+    private void state(int icon, boolean spinning, int dotColor, String head, String det, String hint) {
+        setIcon(icon, spinning);
+        setDot(dotColor);
+        show(headline, head);
+        show(detail, det);
+        show(meta, hint);
     }
 }
